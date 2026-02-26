@@ -1,9 +1,12 @@
 import { useState } from "react";
 import "./App.css";
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 function App() {
   const [f, setF] = useState({});
   const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -39,7 +42,9 @@ function App() {
     ];
 
     try {
-      const res = await fetch("http://localhost:4000/predict", {
+      setLoading(true);
+
+      const res = await fetch(`${API_URL}/predict`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -47,11 +52,18 @@ function App() {
         body: JSON.stringify({ features })
       });
 
+      if (!res.ok) {
+        throw new Error("Server error");
+      }
+
       const data = await res.json();
       setResult(data);
 
     } catch (err) {
       alert("Failed to connect to backend");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,11 +121,7 @@ function App() {
           </div>
 
           <div className="checkbox-field">
-            <input
-              type="checkbox"
-              name="Metabolic_Risk"
-              onChange={handleChange}
-            />
+            <input type="checkbox" name="Metabolic_Risk" onChange={handleChange} />
             <label>Metabolic Risk</label>
           </div>
         </div>
@@ -165,11 +173,7 @@ function App() {
           </div>
 
           <div className="checkbox-field">
-            <input
-              type="checkbox"
-              name="Anemia_Risk"
-              onChange={handleChange}
-            />
+            <input type="checkbox" name="Anemia_Risk" onChange={handleChange} />
             <label>Anemia Risk</label>
           </div>
         </div>
@@ -195,11 +199,7 @@ function App() {
           </div>
 
           <div className="checkbox-field">
-            <input
-              type="checkbox"
-              name="Fetal_Growth_Stress"
-              onChange={handleChange}
-            />
+            <input type="checkbox" name="Fetal_Growth_Stress" onChange={handleChange} />
             <label>Fetal Growth Stress</label>
           </div>
         </div>
@@ -226,7 +226,9 @@ function App() {
         </div>
       </section>
 
-      <button onClick={predictRisk}>Predict Risk</button>
+      <button onClick={predictRisk} disabled={loading}>
+        {loading ? "Predicting..." : "Predict Risk"}
+      </button>
 
       {result && (
         <div className="result">
