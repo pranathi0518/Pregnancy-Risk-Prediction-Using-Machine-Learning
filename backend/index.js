@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 const app = express();
 
 /* ==============================
-   🔹 CORS CONFIG (IMPORTANT FIX)
+   🔹 CORS CONFIG
 ============================== */
 app.use(cors({
   origin: "https://pregnancy-risk-predictor.onrender.com",
@@ -27,40 +27,27 @@ let dbConnected = false;
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("✅ MongoDB Atlas Connected");
+    console.log("MongoDB Atlas Connected");
     dbConnected = true;
   })
   .catch((err) => {
-    console.error("❌ MongoDB Connection Error:", err.message);
-    console.log("⚠️ Running without database (temporary mode)");
+    console.error("MongoDB Connection Error:", err.message);
   });
 
 /* ==============================
-   🔹 CREATE SCHEMA & MODEL
+   🔹 SCHEMA & MODEL
 ============================== */
 const predictionSchema = new mongoose.Schema({
-  features: {
-    type: Array,
-    required: true,
-  },
-  prediction: {
-    type: Number,
-    required: true,
-  },
-  result: {
-    type: String,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  features: { type: Array, required: true },
+  prediction: { type: String, required: true },
+  result: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
 });
 
 const Prediction = mongoose.model("Prediction", predictionSchema);
 
 /* ==============================
-   🔹 HEALTH CHECK ROUTE
+   🔹 HEALTH CHECK
 ============================== */
 app.get("/", (req, res) => {
   res.json({
@@ -88,46 +75,30 @@ app.post("/predict", async (req, res) => {
 
     const { prediction, result } = response.data;
 
-    // Save to DB only if connected
+    // Save only if DB connected
     if (dbConnected) {
       try {
-        const newPrediction = new Prediction({
+        await Prediction.create({
           features,
           prediction,
           result,
         });
-
-        await newPrediction.save();
-        console.log("✅ Prediction saved to database");
-      } catch (dbError) {
-        console.log("⚠️ DB Save Failed:", dbError.message);
+        console.log("Prediction saved to DB");
+      } catch (dbErr) {
+        console.log("DB Save Error:", dbErr.message);
       }
     }
 
-    res.json({ prediction, result });
+    return res.json({ prediction, result });
 
   } catch (error) {
-    console.error("❌ Prediction Error:", error.message);
-    res.status(500).json({ error: "Prediction failed" });
-  }
-});
+    console.error("Prediction Error:", error.message);
 
-/* ==============================
-   🔹 GET HISTORY ROUTE
-============================== */
-app.get("/history", async (req, res) => {
-  if (!dbConnected) {
-    return res.status(500).json({
-      error: "Database not connected"
-    });
-  }
+    if (error.response) {
+      console.error("ML API Error:", error.response.data);
+    }
 
-  try {
-    const data = await Prediction.find().sort({ createdAt: -1 });
-    res.json(data);
-  } catch (error) {
-    console.error("❌ History Fetch Error:", error.message);
-    res.status(500).json({ error: "Could not fetch history" });
+    return res.status(500).json({ error: "Prediction failed" });
   }
 });
 
@@ -135,5 +106,5 @@ app.get("/history", async (req, res) => {
    🔹 START SERVER
 ============================== */
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
