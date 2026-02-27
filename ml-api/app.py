@@ -21,14 +21,13 @@ app.add_middleware(
 )
 
 # ---------------------------------------------
-# Load Model and Threshold
+# Load Trained Model
 # ---------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 model = joblib.load(os.path.join(BASE_DIR, "model.pkl"))
-threshold = float(joblib.load(os.path.join(BASE_DIR, "threshold.pkl")))
 
-print("Model classes:", model.classes_)  # Debug print
+print("Model classes:", model.classes_)  # Debug
 
 # ---------------------------------------------
 # Request Schema
@@ -37,11 +36,11 @@ class InputData(BaseModel):
     features: list[float]
 
 # ---------------------------------------------
-# Health Check
+# Health Check Route
 # ---------------------------------------------
 @app.get("/")
 def home():
-    return {"status": "ML API running"}
+    return {"status": "ML API running successfully"}
 
 # ---------------------------------------------
 # Prediction Route
@@ -49,25 +48,20 @@ def home():
 @app.post("/predict")
 def predict(data: InputData):
     try:
+        # Convert input to numpy array
         features = np.array(data.features).reshape(1, -1)
 
-        # Get probabilities for both classes
-        probabilities = model.predict_proba(features)[0]
+        # Predict class
+        predicted_class = model.predict(features)[0]
 
-        # Identify index of High Risk class
-        # Assuming label 1 = High Risk (common case)
-        if 1 in model.classes_:
-            high_risk_index = list(model.classes_).index(1)
+        # Convert multi-class output to Risk Level
+        if predicted_class == "Normal":
+            result_label = "Low Risk"
         else:
-            # fallback: assume class 0 is High Risk
-            high_risk_index = 0
-
-        high_risk_probability = probabilities[high_risk_index]
-
-        result_label = "High Risk" if high_risk_probability >= threshold else "Low Risk"
+            result_label = "High Risk"
 
         return {
-            "prediction": float(high_risk_probability),
+            "prediction": predicted_class,
             "result": result_label
         }
 
