@@ -5,11 +5,20 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 
 const app = express();
-app.use(cors());
+
+/* ==============================
+   🔹 CORS CONFIG (IMPORTANT FIX)
+============================== */
+app.use(cors({
+  origin: "https://pregnancy-risk-predictor.onrender.com",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"],
+}));
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
-const ML_API_URL = process.env.ML_API_URL || "http://localhost:8000";
+const ML_API_URL = process.env.ML_API_URL;
 
 /* ==============================
    🔹 CONNECT TO MONGODB ATLAS
@@ -93,11 +102,9 @@ app.post("/predict", async (req, res) => {
       } catch (dbError) {
         console.log("⚠️ DB Save Failed:", dbError.message);
       }
-    } else {
-      console.log("⚠️ Skipping DB save (not connected)");
     }
 
-    res.json(response.data);
+    res.json({ prediction, result });
 
   } catch (error) {
     console.error("❌ Prediction Error:", error.message);
