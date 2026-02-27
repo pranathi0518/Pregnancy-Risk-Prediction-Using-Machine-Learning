@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./App.css";
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = "https://pregnancy-risk-prediction-using-machine-wmrx.onrender.com";
 
 function App() {
   const [f, setF] = useState({});
