@@ -24,10 +24,9 @@ app.add_middleware(
 # Load Trained Model
 # ---------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 model = joblib.load(os.path.join(BASE_DIR, "model.pkl"))
 
-print("Model classes:", model.classes_)  # Debug
+print("Model classes:", model.classes_)
 
 # ---------------------------------------------
 # Request Schema
@@ -49,10 +48,17 @@ def home():
 def predict(data: InputData):
     try:
         # Convert input to numpy array
-        features = np.array(data.features).reshape(1, -1)
+        features = np.array(data.features, dtype=float).reshape(1, -1)
 
         # Predict class
         predicted_class = model.predict(features)[0]
+
+        # 🔥 FIX: Convert numpy type to native Python type
+        if isinstance(predicted_class, np.generic):
+            predicted_class = predicted_class.item()
+
+        # Convert to string to be extra safe for JSON
+        predicted_class = str(predicted_class)
 
         # Convert multi-class output to Risk Level
         if predicted_class == "Normal":
