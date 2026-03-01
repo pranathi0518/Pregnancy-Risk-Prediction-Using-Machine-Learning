@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import numpy as np
+import pandas as pd
 import os
 
 # ---------------------------------------------
@@ -26,7 +27,7 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model = joblib.load(os.path.join(BASE_DIR, "model.pkl"))
 
-print("Model classes:", model.classes_)
+print("Model loaded successfully")
 
 # ---------------------------------------------
 # Request Schema
@@ -47,20 +48,36 @@ def home():
 @app.post("/predict")
 def predict(data: InputData):
     try:
-        # Convert input to numpy array
-        features = np.array(data.features, dtype=float).reshape(1, -1)
+        feature_names = [
+            "Age",
+            "BMI",
+            "BMI_Category",
+            "DiastolicBP",
+            "BP_Risk",
+            "BodyTemp",
+            "HeartRate",
+            "Hematocrit",
+            "Anemia_Risk",
+            "SerumCreatinine",
+            "WBC",
+            "USG_AC",
+            "USG_BPD",
+            "USG_FL",
+            "Fetal_Growth_Stress",
+            "GestationalAge_Weeks",
+            "Trimester",
+            "OGTT_Fasting",
+            "OGTT_1hr",
+            "OGTT_2hr",
+            "Metabolic_Risk"
+        ]
 
-        # Predict class
-        predicted_class = model.predict(features)[0]
+        # Convert input to DataFrame (important fix)
+        df = pd.DataFrame([data.features], columns=feature_names)
 
-        # 🔥 FIX: Convert numpy type to native Python type
-        if isinstance(predicted_class, np.generic):
-            predicted_class = predicted_class.item()
-
-        # Convert to string to be extra safe for JSON
+        predicted_class = model.predict(df)[0]
         predicted_class = str(predicted_class)
 
-        # Convert multi-class output to Risk Level
         if predicted_class == "Normal":
             result_label = "Low Risk"
         else:
@@ -72,4 +89,5 @@ def predict(data: InputData):
         }
 
     except Exception as e:
+        print("Prediction error:", str(e))
         raise HTTPException(status_code=400, detail=str(e))
