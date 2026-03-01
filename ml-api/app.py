@@ -72,14 +72,21 @@ def predict(data: InputData):
             "Metabolic_Risk"
         ]
 
+        # Convert list into DataFrame with correct column order
         df = pd.DataFrame([data.features], columns=feature_names)
 
-        prediction = model.predict(df)[0]
-        prediction = str(prediction)
+        # Get numeric prediction (0 or 1)
+        prediction = int(model.predict(df)[0])
+
+        # Convert numeric output to label
+        if prediction == 0:
+            result = "Low Risk"
+        else:
+            result = "High Risk"
 
         return {
             "prediction": prediction,
-            "result": prediction
+            "result": result
         }
 
     except Exception as e:
