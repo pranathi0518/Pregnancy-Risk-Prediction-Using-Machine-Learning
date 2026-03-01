@@ -7,13 +7,9 @@ const mongoose = require("mongoose");
 const app = express();
 
 /* ==============================
-   🔹 CORS CONFIG
+   🔹 CORS FIX (OPEN FOR NOW)
 ============================== */
-app.use(cors({
-  origin: "https://pregnancy-risk-predictor.onrender.com",
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"],
-}));
+app.use(cors());   // ✅ Allow all origins to avoid CORS blocking
 
 app.use(express.json());
 
@@ -39,7 +35,7 @@ mongoose.connect(process.env.MONGO_URI)
 ============================== */
 const predictionSchema = new mongoose.Schema({
   features: { type: Array, required: true },
-  prediction: { type: String, required: true },
+  prediction: { type: String, required: true },  // ✅ String (important)
   result: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
@@ -67,15 +63,19 @@ app.post("/predict", async (req, res) => {
       return res.status(400).json({ error: "Features are required" });
     }
 
-    // Call ML API
+    console.log("Calling ML API...");
+
+    // 🔹 Call ML API
     const response = await axios.post(
       `${ML_API_URL}/predict`,
       { features }
     );
 
+    console.log("ML API Response:", response.data);
+
     const { prediction, result } = response.data;
 
-    // Save only if DB connected
+    // 🔹 Save to DB if connected
     if (dbConnected) {
       try {
         await Prediction.create({
